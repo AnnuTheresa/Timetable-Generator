@@ -79,5 +79,9 @@ export const api = {
     listVersions: (semesterId) => request(`/timetable/semester/${semesterId}/versions`),
     updateSlot: (body) => request('/timetable/slot', { method: 'PATCH', body: JSON.stringify(body) }),
     swapSlots: (body) => request('/timetable/slot/swap', { method: 'POST', body: JSON.stringify(body) }),
+    activateVersion: (versionId) =>
+    request(`/timetable/version/${versionId}/activate`, { method: 'PATCH' }),
+    deleteVersion: (versionId) =>
+    request(`/timetable/version/${versionId}`, { method: 'DELETE' }),
   },
 };

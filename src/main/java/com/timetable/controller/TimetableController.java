@@ -55,4 +55,15 @@ public class TimetableController {
         timetableService.swapSlots(request);
         return ResponseEntity.noContent().build();
     }
+    @PatchMapping("/version/{versionId}/activate")
+public ResponseEntity<Void> activateVersion(@PathVariable Long versionId) {
+    timetableService.activateVersion(versionId);
+    return ResponseEntity.noContent().build();
+}
+
+@DeleteMapping("/version/{versionId}")
+public ResponseEntity<Void> deleteVersion(@PathVariable Long versionId) {
+    timetableService.deleteVersion(versionId);
+    return ResponseEntity.noContent().build();
+}
 }
