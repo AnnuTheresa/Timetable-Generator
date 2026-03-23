@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TimetableCspSolver {
-
+   
     private static final int FRIDAY = 5;
     private final CspContext context;
     private String lastFailureReason;
@@ -100,35 +100,54 @@ public class TimetableCspSolver {
         List<CspAssignment> allAssignments = new ArrayList<>();
 
         
-        if (context.getLockedSlots() != null) {
-            for (CspContext.LockedSlot ls : context.getLockedSlots()) {
-                int[] periods;
-                if (ls.getLabBlockId() != null) {
-                    
-                    periods = labPeriods(ls.getDayOfWeek(), ls.getPeriodIndex());
-                } else {
-                    periods = new int[]{ls.getPeriodIndex()};
-                }
+    if (context.getLockedSlots() != null) {
+    for (CspContext.LockedSlot ls : context.getLockedSlots()) {
+        int[] periods = ls.getLabBlockId() != null
+                ? labPeriods(ls.getDayOfWeek(), ls.getPeriodIndex())
+                : new int[]{ls.getPeriodIndex()};
 
-                for (int p : periods) {
-                    sectionBusy.add(ls.getClassSectionId() + "," + ls.getDayOfWeek() + "," + p);
-                    if (ls.getTeacherId() != null)
-                        teacherBusy.add(ls.getDayOfWeek() + "," + p + "," + ls.getTeacherId());
-                    if (ls.getRoomId() != null)
-                        roomBusy.add(ls.getDayOfWeek() + "," + p + "," + ls.getRoomId());
-                }
-
-                allAssignments.add(CspAssignment.builder()
-                        .classSectionId(ls.getClassSectionId())
-                        .dayOfWeek(ls.getDayOfWeek())
-                        .periodIndex(ls.getPeriodIndex())
-                        .subjectId(ls.getSubjectId())
-                        .teacherId(ls.getTeacherId())
-                        .roomId(ls.getRoomId())
-                        .labBlockId(ls.getLabBlockId())
-                        .build());
+        for (int p : periods) {
+            if (ls.getTeacherId() != null &&
+                    teacherBusy.contains(ls.getDayOfWeek() + "," + p
+                            + "," + ls.getTeacherId())) {
+                lastFailureReason = "Locked slot conflict: Teacher ID "
+                        + ls.getTeacherId()
+                        + " is already assigned in another semester on day "
+                        + ls.getDayOfWeek() + " period " + p
+                        + ". Please unlock that slot before regenerating.";
+                return null;
+            }
+            if (ls.getRoomId() != null &&
+                    roomBusy.contains(ls.getDayOfWeek() + "," + p
+                            + "," + ls.getRoomId())) {
+                lastFailureReason = "Locked slot conflict: Room ID "
+                        + ls.getRoomId()
+                        + " is already in use in another semester on day "
+                        + ls.getDayOfWeek() + " period " + p
+                        + ". Please unlock that slot before regenerating.";
+                return null;
             }
         }
+
+        for (int p : periods) {
+            sectionBusy.add(ls.getClassSectionId() + "," + ls.getDayOfWeek() + "," + p);
+            if (ls.getTeacherId() != null)
+                teacherBusy.add(ls.getDayOfWeek() + "," + p + "," + ls.getTeacherId());
+            if (ls.getRoomId() != null)
+                roomBusy.add(ls.getDayOfWeek() + "," + p + "," + ls.getRoomId());
+        }
+
+        allAssignments.add(CspAssignment.builder()
+                .classSectionId(ls.getClassSectionId())
+                .dayOfWeek(ls.getDayOfWeek())
+                .periodIndex(ls.getPeriodIndex())
+                .subjectId(ls.getSubjectId())
+                .teacherId(ls.getTeacherId())
+                .roomId(ls.getRoomId())
+                .labBlockId(ls.getLabBlockId())
+                .build());
+    }
+}
 
         for (CspContext.ClassSectionInfo section : context.getClassSections()) {
             long sid = section.getId();
@@ -206,7 +225,7 @@ public class TimetableCspSolver {
 
             theoryQueue = interleave(theoryQueue);
 
-            if (freeSlots.size() != theoryQueue.size()) {
+            if (freeSlots.size() < theoryQueue.size()) {
                 System.out.println("MISMATCH: section=" + sid
                         + " freeSlots=" + freeSlots.size()
                         + " theoryQueue=" + theoryQueue.size()
@@ -214,70 +233,94 @@ public class TimetableCspSolver {
                 return null;
             }
 
-            boolean[] itemPlaced = new boolean[theoryQueue.size()];
-            int placedCount = 0;
+           boolean[] itemPlaced = new boolean[theoryQueue.size()];
+           int placedCount = 0;
 
-            for (int si = 0; si < freeSlots.size(); si++) {
-                int day    = freeSlots.get(si)[0];
-                int period = freeSlots.get(si)[1];
+           Map<Long, Set<Integer>> subjectDaysUsed = new HashMap<>();
 
-                Long prevSubj = getSubjectAt(allAssignments, sid, day, period - 1);
-                Long nextSubj = getSubjectAt(allAssignments, sid, day, period + 1);
+    for (int si = 0; si < freeSlots.size(); si++) {
+    if (si >= theoryQueue.size()) break;
 
-                long[] best    = null;
-                int    bestIdx = -1;
+    int day    = freeSlots.get(si)[0];
+    int period = freeSlots.get(si)[1];
 
-                for (int ti = 0; ti < theoryQueue.size(); ti++) {
-                    if (itemPlaced[ti]) continue;
-                    long[] item = theoryQueue.get(ti);
-                    long itemTeacherId = item[1];
+    Long prevSubj = getSubjectAt(allAssignments, sid, day, period - 1);
+    Long nextSubj = getSubjectAt(allAssignments, sid, day, period + 1);
 
-                    if (teacherBusy.contains(day + "," + period + "," + itemTeacherId)) continue;
-                    if (sectionBusy.contains(sid + "," + day + "," + period)) continue;
+    long[] best       = null;
+    int    bestIdx    = -1;
+    boolean bestOnSameDay = false;
 
-                    boolean consecutive = (prevSubj != null && prevSubj == item[0])
-                            || (nextSubj != null && nextSubj == item[0]);
+    for (int ti = 0; ti < theoryQueue.size(); ti++) {
+        if (itemPlaced[ti]) continue;
+        long[] item = theoryQueue.get(ti);
+        long itemTeacherId = item[1];
 
-                    if (best == null) {
-    best    = item;
-    bestIdx = ti;
-    if (!consecutive) break; 
-} else if (!consecutive && bestIsConsecutive(best, prevSubj, nextSubj)) {
-    best    = item;
-    bestIdx = ti;
-    break; 
+        if (teacherBusy.contains(day + "," + period + "," + itemTeacherId)) continue;
+        if (sectionBusy.contains(sid + "," + day + "," + period)) continue;
+
+        boolean consecutive = (prevSubj != null && prevSubj == item[0])
+                || (nextSubj != null && nextSubj == item[0]);
+        if (consecutive) continue;
+
+        boolean sameDay = subjectDaysUsed
+                .getOrDefault(item[0], Collections.emptySet())
+                .contains(day);
+
+        if (best == null) {
+            best = item;
+            bestIdx = ti;
+            bestOnSameDay = sameDay;
+            if (!sameDay) break;
+        } else if (!sameDay && bestOnSameDay) {
+            best = item;
+            bestIdx = ti;
+            bestOnSameDay = false;
+            break;
+        }
+    }
+
+    if (best == null) {
+        for (int ti = 0; ti < theoryQueue.size(); ti++) {
+            if (itemPlaced[ti]) continue;
+            long[] item = theoryQueue.get(ti);
+            long itemTeacherId = item[1];
+            if (teacherBusy.contains(day + "," + period + "," + itemTeacherId)) continue;
+            if (sectionBusy.contains(sid + "," + day + "," + period)) continue;
+            best = item;
+            bestIdx = ti;
+            break;
+        }
+    }
+
+    if (best == null) return null;
+
+    itemPlaced[bestIdx] = true;
+    placedCount++;
+
+    subjectDaysUsed.computeIfAbsent(best[0], k -> new HashSet<>()).add(day);
+
+    long itemTeacherId = best[1];
+    Long roomId        = best[2] < 0 ? null : best[2];
+
+    sectionBusy.add(sid + "," + day + "," + period);
+    teacherBusy.add(day + "," + period + "," + itemTeacherId);
+    if (roomId != null) roomBusy.add(day + "," + period + "," + roomId);
+
+    allAssignments.add(CspAssignment.builder()
+            .classSectionId(sid).dayOfWeek(day).periodIndex(period)
+            .subjectId(best[0]).teacherId(itemTeacherId).roomId(roomId)
+            .build());
 }
-                }
 
-                if (best == null) return null;
-
-                itemPlaced[bestIdx] = true;
-                placedCount++;
-
-                long itemTeacherId = best[1];
-                Long roomId        = best[2] < 0 ? null : best[2];
-
-                sectionBusy.add(sid + "," + day + "," + period);
-                teacherBusy.add(day + "," + period + "," + itemTeacherId);
-                if (roomId != null) roomBusy.add(day + "," + period + "," + roomId);
-
-                allAssignments.add(CspAssignment.builder()
-                        .classSectionId(sid).dayOfWeek(day).periodIndex(period)
-                        .subjectId(best[0]).teacherId(itemTeacherId).roomId(roomId)
-                        .build());
-            }
-
-            if (placedCount != theoryQueue.size()) return null;
+if (placedCount != theoryQueue.size()) return null;
         }
 
         return allAssignments;
     }
 
 
-    private boolean bestIsConsecutive(long[] best, Long prevSubj, Long nextSubj) {
-        return (prevSubj != null && prevSubj == best[0])
-                || (nextSubj != null && nextSubj == best[0]);
-    }
+   
 
     private Long getSubjectAt(List<CspAssignment> assignments,
                                long sectionId, int day, int period) {

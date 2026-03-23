@@ -131,6 +131,10 @@ for (TeacherSubjectAllocation a : allocations) {
                         .classSectionId(slot.getClassSection().getId())
                         .build());
             }
+            System.out.println("DEBUG existing room IDs: " + 
+              existingAssignments.stream()
+                  .map(e -> String.valueOf(e.getRoomId()))
+                  .collect(Collectors.joining(", ")));
         }
 
         List<TimetableVersion> existingVersions = timetableVersionRepository
@@ -449,4 +453,32 @@ for (TeacherSubjectAllocation a : allocations) {
         c.put("modifyExistingOnConflict", modifyExisting);
         return c;
     }
+    @Transactional
+public void activateVersion(Long versionId) {
+    TimetableVersion toActivate = timetableVersionRepository.findById(versionId)
+            .orElseThrow(() -> new IllegalArgumentException("Version not found"));
+
+    timetableVersionRepository
+        .findBySemesterIdOrderByVersionNumberDesc(toActivate.getSemester().getId())
+        .stream()
+        .filter(v -> "ACTIVE".equals(v.getStatus()))
+        .forEach(v -> {
+            v.setStatus("INACTIVE");
+            timetableVersionRepository.save(v);
+        });
+
+    toActivate.setStatus("ACTIVE");
+    timetableVersionRepository.save(toActivate);
+}
+
+@Transactional
+public void deleteVersion(Long versionId) {
+    TimetableVersion version = timetableVersionRepository.findById(versionId)
+            .orElseThrow(() -> new IllegalArgumentException("Version not found"));
+    if ("ACTIVE".equals(version.getStatus()))
+        throw new IllegalStateException(
+            "Cannot delete the active version. Activate another version first.");
+    timetableSlotRepository.deleteByTimetableVersionId(versionId);
+    timetableVersionRepository.delete(version);
+}
 }
