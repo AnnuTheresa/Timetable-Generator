@@ -13,15 +13,16 @@ public interface TimetableSlotRepository extends JpaRepository<TimetableSlot, Lo
     void deleteByTimetableVersionId(Long timetableVersionId);
     
     @Query("SELECT ts FROM TimetableSlot ts " +
-           "JOIN FETCH ts.teacher " +
-           "LEFT JOIN FETCH ts.room " +
-           "JOIN ts.timetableVersion tv " +
-           "JOIN tv.semester s " +
-           "WHERE s.course.id = :courseId " +
-           "AND tv.semester.id != :excludeSemesterId " +
-           "AND tv.status = 'ACTIVE' " +
-           "AND ts.teacher IS NOT NULL")
-    List<TimetableSlot> findSlotsByOtherSemestersInCourse(
-            @Param("courseId") Long courseId,
-            @Param("excludeSemesterId") Long excludeSemesterId);
+       "JOIN FETCH ts.teacher " +
+       "LEFT JOIN FETCH ts.room " +
+       "JOIN ts.timetableVersion tv " +
+       "JOIN tv.semester s " +
+       "JOIN s.course c " +
+       "WHERE c.department.id = :departmentId " +
+       "AND tv.semester.id != :excludeSemesterId " +
+       "AND tv.status = 'ACTIVE' " +
+       "AND ts.teacher IS NOT NULL")
+List<TimetableSlot> findSlotsByOtherSemestersInDepartment(
+        @Param("departmentId") Long departmentId,
+        @Param("excludeSemesterId") Long excludeSemesterId);
 }

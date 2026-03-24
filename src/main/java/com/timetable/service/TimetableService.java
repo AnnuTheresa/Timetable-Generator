@@ -44,7 +44,6 @@ public class TimetableService {
 
         Set<Long> subjectIds = allocations.stream()
                 .map(a -> a.getSubject().getId()).collect(Collectors.toSet());
-        // FIX — only include subjects belonging to THIS semester
 List<Subject> subjects = subjectRepository.findAllById(subjectIds)
         .stream()
         .filter(s -> s.getSemester().getId().equals(semester.getId()))
@@ -110,15 +109,13 @@ for (TeacherSubjectAllocation a : allocations) {
 
 
         System.out.println("DEBUG: modifyExistingOnConflict=" + request.isModifyExistingOnConflict());
-        System.out.println("DEBUG: courseId=" + semester.getCourse().getId());
         System.out.println("DEBUG: semesterId=" + semester.getId());
 
         if (!request.isModifyExistingOnConflict()) {
-            Long courseId = semester.getCourse().getId();
-            List<TimetableSlot> otherSlots = timetableSlotRepository
-                    .findSlotsByOtherSemestersInCourse(courseId, semester.getId());
+           List<TimetableSlot> otherSlots = timetableSlotRepository
+                 .findSlotsByOtherSemestersInDepartment(departmentId, semester.getId());
 
-            System.out.println("DEBUG: slots from other semesters=" + otherSlots.size());
+           System.out.println("DEBUG: slots from other semesters=" + otherSlots.size());
 
             for (TimetableSlot slot : otherSlots) {
                 existingAssignments.add(CspContext.ExistingAssignment.builder()
