@@ -36,6 +36,7 @@ public class Subject {
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
 
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

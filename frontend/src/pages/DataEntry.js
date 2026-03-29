@@ -18,6 +18,7 @@ export default function DataEntry() {
   const [selectedSemesterForAllocations, setSelectedSemesterForAllocations] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [allocationSubjects, setAllocationSubjects] = useState([]);
 
   const load = async () => {
     setError('');
@@ -60,6 +61,15 @@ export default function DataEntry() {
       api.allocations.list(selectedSemesterForAllocations, academicYear).then(setAllocations).catch(setError);
     }
   }, [selectedSemesterForAllocations, academicYear]);
+  useEffect(() => {
+    if (selectedSemesterForAllocations) {
+      api.subjects.list(selectedSemesterForAllocations)
+      .then(setAllocationSubjects)
+      .catch((e) => setError(e.message));
+    } else {
+      setAllocationSubjects([]);
+    }
+  }, [selectedSemesterForAllocations]);
 
   return (
     <div>
@@ -142,7 +152,17 @@ export default function DataEntry() {
       { key: 'code', label: 'Code', type: 'text' },
       { key: 'isLab', label: 'Is Lab', type: 'checkbox' },
       { key: 'periodsPerWeek', label: 'Periods per week', type: 'number' },
-      { key: 'semesterId', label: 'Semester', type: 'select', options: semesters, optionValue: 'id', optionLabel: 'semesterNumber' },
+      {
+        key: 'semesterId',
+        label: 'Semester',
+        type: 'select',
+        options: semesters,
+        optionValue: 'id',
+        optionLabel: (s) => {
+          const course = courses.find((c) => c.id === s.courseId);
+          return `${course?.name ?? 'Unknown'} - Sem ${s.semesterNumber}`;
+        }
+      },
     ]}
     createPayload={(form) => ({
       name: form.name,
@@ -244,7 +264,7 @@ export default function DataEntry() {
               api={api}
               allocations={allocations}
               teachers={teachers}
-              subjects={subjects}
+              subjects={allocationSubjects}
               rooms={rooms}
               semesterId={selectedSemesterForAllocations}
               academicYear={academicYear}
@@ -387,8 +407,12 @@ function EntityCrud({ title, list, onReload, fields, createPayload, api, noForei
               {fields.map((f) => (
                 <td key={f.key} style={{ padding: '0.5rem' }}>
                   {f.type === 'select' && f.options
-                    ? (f.options.find((o) => o.id === item[f.key])?.[f.optionLabel] ?? item[f.key])
-                    : String(item[f.key] ?? '')}
+                    ? (() => {
+                         const opt = f.options.find((o) => o.id === item[f.key]);
+                         if (!opt) return item[f.key];
+                         return typeof f.optionLabel === 'function' ? f.optionLabel(opt) : opt[f.optionLabel];
+                       })()
+                     : String(item[f.key] ?? '')}
                 </td>
               ))}
               <td style={{ padding: '0.5rem' }}>

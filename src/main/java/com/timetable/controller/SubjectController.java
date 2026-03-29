@@ -17,7 +17,10 @@ public class SubjectController {
     private final SubjectService subjectService;
 
     @GetMapping
-    public List<SubjectDto> findAll() {
+    public List<SubjectDto> findAll(@RequestParam(required = false) Long semesterId) {
+        if (semesterId != null) {
+            return subjectService.findBySemesterId(semesterId);
+        }
         return subjectService.findAll();
     }
 

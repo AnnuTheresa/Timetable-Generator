@@ -86,4 +86,11 @@ public class SubjectService {
 
         return dto;
     }
+    @Transactional(readOnly = true)
+      public List<SubjectDto> findBySemesterId(Long semesterId) { 
+           return subjectRepository.findBySemesterId(semesterId)
+            .stream()
+            .map(this::toDto)
+            .collect(Collectors.toList());
+    }
 }

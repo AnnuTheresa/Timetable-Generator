@@ -148,15 +148,44 @@ export default function TimetableGenerate() {
           <h2>Saved versions</h2>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {versions.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                className={`btn btn-secondary ${selectedVersionId === v.id ? 'active' : ''}`}
-                onClick={() => setSelectedVersionId(v.id)}
-              >
-                Version {v.versionNumber}
-              </button>
-            ))}
+                <div key={v.id} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '6px' }}>
+                     <button
+                         type="button"
+                         className={`btn btn-secondary ${selectedVersionId === v.id ? 'active' : ''}`}
+                         onClick={() => setSelectedVersionId(v.id)}
+                     >
+                        Version {v.versionNumber} {v.status === 'ACTIVE' ? '★' : ''}
+                     </button>
+                     {v.status !== 'ACTIVE' && (
+                         <>
+                             <button
+                                type="button"
+                                className="btn btn-success"
+                                onClick={() =>
+                                    api.timetable.activateVersion(v.id)
+                                       .then(() => api.timetable.listVersions(semesterId).then(setVersions))
+                                       .catch(e => setError(e.message))
+                               }
+                             >
+                               Set active
+                             </button>
+                             <button
+                                type="button"
+                                className="btn btn-danger"
+                                onClick={() => {
+                                   if (window.confirm(`Delete Version ${v.versionNumber}?`)) {
+                                       api.timetable.deleteVersion(v.id)
+                                          .then(() => api.timetable.listVersions(semesterId).then(setVersions))
+                                          .catch(e => setError(e.message));
+                                 }
+                               }}
+                             >
+                               Delete
+                             </button>
+                        </>
+                      )}
+          </div>
+     ))}
           </div>
         </div>
       )}

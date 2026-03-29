@@ -84,4 +84,11 @@ export const api = {
     deleteVersion: (versionId) =>
     request(`/timetable/version/${versionId}`, { method: 'DELETE' }),
   },
+  subjects: {
+    list: (semesterId) => request(semesterId ? `/subjects?semesterId=${semesterId}` : '/subjects'), 
+    get: (id) => request(`/subjects/${id}`),
+    create: (body) => request('/subjects', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id, body) => request(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    delete: (id) => request(`/subjects/${id}`, { method: 'DELETE' }),
+  },
 };
