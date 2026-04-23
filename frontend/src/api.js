@@ -11,7 +11,13 @@ async function request(path, options = {}) {
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+    try {
+      const json = JSON.parse(text);
+      throw new Error(json.error || text);  
+    } catch (e) {
+      if (e instanceof SyntaxError) throw new Error(text || `HTTP ${res.status}`);
+      throw e;
+    }
   }
   if (res.status === 204) return null;
   return res.json();

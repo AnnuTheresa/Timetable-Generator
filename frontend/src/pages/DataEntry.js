@@ -53,13 +53,15 @@ export default function DataEntry() {
   useEffect(() => { load(); }, []);
   useEffect(() => {
     if (selectedSemesterForSections) {
-      api.classSections.list(selectedSemesterForSections).then(setSections).catch(setError);
-    }
+       api.classSections.list(selectedSemesterForSections)
+          .then(setSections)
+          .catch((e) => setError(e.message));    }
   }, [selectedSemesterForSections]);
   useEffect(() => {
     if (selectedSemesterForAllocations) {
-      api.allocations.list(selectedSemesterForAllocations, academicYear).then(setAllocations).catch(setError);
-    }
+        api.allocations.list(selectedSemesterForAllocations, academicYear)
+          .then(setAllocations)
+          .catch((e) => setError(e.message));    }
   }, [selectedSemesterForAllocations, academicYear]);
   useEffect(() => {
     if (selectedSemesterForAllocations) {
@@ -216,8 +218,12 @@ export default function DataEntry() {
               <EntityCrud
                 title=""
                 list={sections}
-                onReload={() => api.classSections.list(selectedSemesterForSections).then(setSections)}
-                fields={[
+                onReload={() =>
+                   api.classSections.list(selectedSemesterForSections)
+                     .then(setSections)
+                     .catch((e) => setError(e.message))
+                    }                
+                    fields={[
                   { key: 'sectionName', label: 'Section name (e.g. A, B)', type: 'text' },
                 ]}
                 createPayload={(form) => ({
