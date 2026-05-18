@@ -3,8 +3,8 @@ spring:
     name: timetable-csp
   datasource:
     url: jdbc:postgresql://localhost:5432/timetable_db
-    username: postgres
-    password: postpro
+    username: username
+    password: password
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
