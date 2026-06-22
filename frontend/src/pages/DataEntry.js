@@ -49,7 +49,7 @@ export default function DataEntry() {
       setError(e.message);
     }
   };
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
   useEffect(() => {
     if (selectedSemesterForSections) {

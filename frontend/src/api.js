@@ -38,13 +38,6 @@ export const api = {
     update: (id, body) => request(`/teachers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     delete: (id) => request(`/teachers/${id}`, { method: 'DELETE' }),
   },
-  subjects: {
-    list: () => request('/subjects'),
-    get: (id) => request(`/subjects/${id}`),
-    create: (body) => request('/subjects', { method: 'POST', body: JSON.stringify(body) }),
-    update: (id, body) => request(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-    delete: (id) => request(`/subjects/${id}`, { method: 'DELETE' }),
-  },
   courses: {
     list: () => request('/courses'),
     get: (id) => request(`/courses/${id}`),
