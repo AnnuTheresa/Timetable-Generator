@@ -5,6 +5,7 @@ import TimetableGenerate from './pages/TimetableGenerate';
 import './App.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || '/api';
+console.log("API_BASE =", API_BASE);
 
 export { API_BASE };
 
